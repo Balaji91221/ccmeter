@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccmeter.local/schemas/engineering-brief.v1.json",
+  "title": "EngineeringBrief",
+  "type": "object",
+  "required": [
+    "version",
+    "title",
+    "skill_primary",
+    "goal",
+    "scope_in",
+    "scope_out",
+    "constraints",
+    "acceptance",
+    "deliverables",
+    "definition_of_done",
+    "complexity",
+    "raw_user_prompt"
+  ],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "title": { "type": "string", "minLength": 3 },
+    "skill_primary": {
+      "type": "string",
+      "enum": ["debug", "feature", "refactor", "revamp", "test", "unknown"]
+    },
+    "skill_secondary": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "goal": { "type": "string", "minLength": 8 },
+    "context": {
+      "type": "object",
+      "properties": {
+        "repo": { "type": "string" },
+        "stack": { "type": "array", "items": { "type": "string" } },
+        "related": { "type": "array", "items": { "type": "string" } },
+        "cwd": { "type": "string" }
+      }
+    },
+    "scope_in": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "scope_out": { "type": "array", "items": { "type": "string" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "acceptance": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "deliverables": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "definition_of_done": { "type": "string", "minLength": 8 },
+    "complexity": { "type": "string", "enum": ["S", "M", "L", "XL"] },
+    "suggested_model": { "type": "string" },
+    "questions": { "type": "array", "items": { "type": "string" }, "maxItems": 3 },
+    "raw_user_prompt": { "type": "string" },
+    "refined_prompt": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ccmeter · dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --bg2: #111821;
+      --bg3: #17212b;
+      --panel: #141c26;
+      --border: #243041;
+      --text: #e7eef7;
+      --muted: #8b9bb0;
+      --faint: #5c6b7e;
+      --accent: #5b9dff;
+      --accent2: #7c6cff;
+      --green: #3ecf8e;
+      --yellow: #f0b429;
+      --red: #ff6b6b;
+      --user: #1a2a3a;
+      --assistant: #161e2a;
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0,0,0,.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2740 0%, transparent 50%),
+                  radial-gradient(900px 500px at 100% 0%, #1b1635 0%, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button, input, select {
+      font: inherit;
+      color: inherit;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: rgba(12,16,22,.9);
+      backdrop-filter: blur(12px);
+      padding: 20px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: white;
+      box-shadow: 0 0 24px rgba(91,157,255,.35);
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .nav-btn:hover { background: var(--bg3); color: var(--text); }
+    .nav-btn.active {
+      background: linear-gradient(90deg, rgba(91,157,255,.16), rgba(124,108,255,.08));
+      border-color: rgba(91,157,255,.35);
+      color: var(--text);
+    }
+    .nav-btn .ico { width: 18px; text-align: center; opacity: .9; }
+    .sidebar-foot {
+      margin-top: auto;
+      padding: 12px 10px;
+      color: var(--faint);
+      font-size: 11px;
+      border-top: 1px solid var(--border);
+    }
+    .main {
+      padding: 22px 28px 40px;
+      max-width: 1400px;
+    }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 20px;
+      justify-content: space-between;
+    }
+    .topbar h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .topbar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .filters label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .filters input, .filters select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 120px;
+      outline: none;
+    }
+    .filters input:focus, .filters select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(91,157,255,.15);
+    }
+    .btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary {
+      background: linear-gradient(135deg, #3d7dff, #6a5cff);
+      border: none;
+      font-weight: 600;
+    }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.ghost { background: transparent; }
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .stat .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .stat .value { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+    .stat .sub { color: var(--faint); font-size: 11px; margin-top: 4px; }
+    .stat.cost .value { color: #9ec5ff; }
+    .stat.save .value { color: var(--green); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .panel-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .panel-h h3 { margin: 0; font-size: 14px; font-weight: 650; }
+    .panel-h .meta { color: var(--muted); font-size: 12px; }
+    .panel-b { padding: 12px 16px; }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(36,48,65,.85);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr { cursor: default; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: rgba(91,157,255,.06); }
+    .mono { font-family: var(--mono); font-size: 12px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .pill.model { color: #c8b8ff; border-color: rgba(124,108,255,.35); }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .bar-wrap {
+      height: 6px;
+      background: var(--bg3);
+      border-radius: 99px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+    }
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 140px;
+      padding-top: 8px;
+    }
+    .chart .col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .chart .col .stem {
+      width: 100%;
+      max-width: 28px;
+      border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, #7eb0ff, #4c6fff);
+      min-height: 2px;
+      transition: height .25s ease;
+    }
+    .chart .col .lbl {
+      font-size: 9px;
+      color: var(--faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .chart .col:hover .stem { filter: brightness(1.15); }
+    .chart .col:hover .lbl { color: var(--text); }
+    .split {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      min-height: 70vh;
+    }
+    @media (max-width: 980px) {
+      .split { grid-template-columns: 1fr; }
+    }
+    .session-list {
+      max-height: calc(100vh - 180px);
+      overflow: auto;
+    }
+    .session-item {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      cursor: pointer;
+      color: inherit;
+    }
+    .session-item:hover, .session-item.active {
+      background: rgba(91,157,255,.08);
+    }
+    .session-item.active {
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .session-item .row1 {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .session-item .id { font-family: var(--mono); font-size: 12px; color: #c8b8ff; }
+    .session-item .cost { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .session-item .proj {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-item .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--faint);
+    }
+    .conv-wrap {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 180px);
+    }
+    .conv-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .conv-scroll {
+      overflow: auto;
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.15), transparent 40px),
+        var(--bg2);
+    }
+    .bubble {
+      max-width: min(820px, 94%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: var(--assistant);
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(180deg, #1a2f45, var(--user));
+      border-color: rgba(91,157,255,.25);
+    }
+    .bubble.assistant { align-self: flex-start; }
+    .bubble.toolish {
+      opacity: .85;
+      border-style: dashed;
+      max-width: min(720px, 90%);
+    }
+    .bubble .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .bubble .role {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: 10px;
+    }
+    .bubble.user .role { color: #8ec0ff; }
+    .bubble.assistant .role { color: #b9a9ff; }
+    .bubble .body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+    .bubble .body.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 8;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .tool {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .loading {
+      color: var(--muted);
+      padding: 24px;
+      text-align: center;
+    }
+    .error {
+      color: var(--red);
+      background: rgba(255,107,107,.08);
+      border: 1px solid rgba(255,107,107,.3);
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .path { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .cost-hi { color: var(--yellow); font-weight: 700; }
+    .linkish {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 0;
+      font: inherit;
+    }
+    .linkish:hover { text-decoration: underline; }
+    .scroll-table { max-height: 420px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">cc</div>
+        <div>
+          <h1>ccmeter</h1>
+          <span>usage dashboard</span>
+        </div>
+      </div>
+      <button class="nav-btn active" data-view="overview"><span class="ico">◈</span> Overview</button>
+      <button class="nav-btn" data-view="sessions"><span class="ico">◎</span> Sessions</button>
+      <button class="nav-btn" data-view="conversation"><span class="ico">☰</span> Conversation</button>
+      <button class="nav-btn" data-view="projects"><span class="ico">▣</span> Projects</button>
+      <button class="nav-btn" data-view="messages"><span class="ico">✦</span> Expensive turns</button>
+      <div class="sidebar-foot">
+        Reads Claude Code JSONL transcripts locally.<br />
+        Zero telemetry · localhost only
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h2 id="view-title">Overview</h2>
+          <p id="view-sub">Spend, sessions, and conversation history from your Claude Code transcripts</p>
+        </div>
+        <div class="filters" id="filters">
+          <label>Project
+            <input id="f-project" placeholder="e.g. backtest-engine" />
+          </label>
+          <label>Since
+            <input id="f-since" placeholder="7d or 2026-07-01" />
+          </label>
+          <label>Model
+            <input id="f-model" placeholder="opus / sonnet" />
+          </label>
+          <label>&nbsp;
+            <button class="btn primary" id="btn-apply">Apply</button>
+          </label>
+          <label>&nbsp;
+            <button class="btn ghost" id="btn-refresh">Refresh</button>
+          </label>
+        </div>
+      </div>
+
+      <div id="error" class="error" hidden></div>
+      <div id="content"><div class="loading">Loading…</div></div>
+    </main>
+  </div>
+
+  <script>
+    const $ = (sel, el = document) => el.querySelector(sel);
+    const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
+
+    const state = {
+      view: 'overview',
+      filters: { project: '', since: '', model: '' },
+      selectedSession: null,
+      cache: {},
+    };
+
+    const money = (n) => {
+      const v = Number(n) || 0;
+      if (v >= 100) return '$' + v.toFixed(0);
+      if (v >= 10) return '$' + v.toFixed(2);
+      if (v >= 1) return '$' + v.toFixed(2);
+      if (v >= 0.01) return '$' + v.toFixed(2);
+      if (v > 0) return '$' + v.toFixed(4);
+      return '$0.00';
+    };
+    const tokens = (n) => {
+      const v = Number(n) || 0;
+      if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+      if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+      if (v >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+      return String(Math.round(v));
+    };
+    const shortPath = (p, n = 36) => {
+      if (!p) return '—';
+      const s = String(p);
+      if (s.length <= n) return s;
+      return '…' + s.slice(-(n - 1));
+    };
+    const shortModel = (m) => String(m || '').replace(/^claude-/, '').replace(/-\d{8}$/, '') || '—';
+    const when = (iso) => {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '—';
+      const pad = (x) => String(x).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    const esc = (s) => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    function qs() {
+      const p = new URLSearchParams();
+      if (state.filters.project) p.set('project', state.filters.project);
+      if (state.filters.since) p.set('since', state.filters.since);
+      if (state.filters.model) p.set('model', state.filters.model);
+      return p.toString();
+    }
+
+    async function api(path, extra = {}) {
+      const base = qs();
+      const u = new URL(path, location.origin);
+      if (base) {
+        const existing = new URLSearchParams(base);
+        existing.forEach((v, k) => u.searchParams.set(k, v));
+      }
+      Object.entries(extra).forEach(([k, v]) => {
+        if (v != null && v !== '') u.searchParams.set(k, v);
+      });
+      const res = await fetch(u);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    function setError(msg) {
+      const el = $('#error');
+      if (!msg) { el.hidden = true; el.textContent = ''; return; }
+      el.hidden = false;
+      el.textContent = msg;
+    }
+
+    function setView(view) {
+      state.view = view;
+      $$('.nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+      const titles = {
+        overview: ['Overview', 'Spend, sessions, and conversation history from your Claude Code transcripts'],
+        sessions: ['Sessions', 'All sessions ranked by cost — open one to read the conversation'],
+        conversation: ['Conversation', 'Full user ↔ assistant timeline for a session'],
+        projects: ['Projects', 'Spend rolled up by working directory'],
+        messages: ['Expensive turns', 'Highest-cost assistant messages with the prompt that triggered them'],
+      };
+      const [t, s] = titles[view] || titles.overview;
+      $('#view-title').textContent = t;
+      $('#view-sub').textContent = s;
+      render();
+    }
+
+    async function render() {
+      setError('');
+      const root = $('#content');
+      root.innerHTML = '<div class="loading">Loading…</div>';
+      try {
+        if (state.view === 'overview') await renderOverview(root);
+        else if (state.view === 'sessions') await renderSessions(root);
+        else if (state.view === 'conversation') await renderConversation(root);
+        else if (state.view === 'projects') await renderProjects(root);
+        else if (state.view === 'messages') await renderMessages(root);
+      } catch (err) {
+        root.innerHTML = '';
+        setError(err.message || String(err));
+      }
+    }
+
+    async function renderOverview(root) {
+      const [summary, daily, models, sessions, projects] = await Promise.all([
+        api('/api/summary'),
+        api('/api/daily'),
+        api('/api/models'),
+        api('/api/sessions', { limit: 12, sort: 'cost' }),
+        api('/api/projects'),
+      ]);
+
+      const peak = Math.max(1, ...daily.rows.map((r) => r.cost));
+      root.innerHTML = `
+        <div class="grid-stats">
+          <div class="stat cost"><div class="label">Total spend</div><div class="value">${money(summary.cost)}</div><div class="sub">${summary.messages.toLocaleString()} turns</div></div>
+          <div class="stat save"><div class="label">Saved by cache</div><div class="value">${money(summary.saved)}</div><div class="sub">${tokens(summary.tokens)} tokens</div></div>
+          <div class="stat"><div class="label">Sessions</div><div class="value">${summary.sessions.toLocaleString()}</div><div class="sub">${summary.projects} projects · ${summary.fileCount} files</div></div>
+          <div class="stat"><div class="label">Range</div><div class="value" style="font-size:14px;padding-top:6px">${when(summary.first)} →<br/>${when(summary.last)}</div></div>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-h"><h3>Daily spend</h3><span class="meta">${daily.rows.length} days</span></div>
+            <div class="panel-b">
+              <div class="chart">
+                ${daily.rows.map((d) => {
+                  const h = Math.max(2, Math.round((d.cost / peak) * 110));
+                  return `<div class="col" title="${esc(d.date)}: ${money(d.cost)}"><div class="stem" style="height:${h}px"></div><div class="lbl">${esc((d.date||'').slice(5))}</div></div>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>Models</h3></div>
+            <div class="scroll-table">
+              <table>
+                <thead><tr><th>Model</th><th class="num">Cost</th><th class="num">Turns</th><th class="num">Cache save</th></tr></thead>
+                <tbody>
+                  ${models.rows.map((m) => `
+                    <tr>
+                      <td><span class="pill model">${esc(shortModel(m.model || m.key))}</span></td>
+                      <td class="num">${money(m.cost)}</td>
+                      <td class="num">${m.messages.toLocaleString()}</td>
+                      <td class="num" style="color:var(--green)">${money(m.saved)}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-h"><h3>Top sessions</h3><button class="linkish" data-goto="sessions">See all →</button></div>
+            <div class="scroll-table">
+              <table>
+                <thead><tr><th>Session</th><th>Project</th><th class="num">Cost</th><th class="num">Turns</th></tr></thead>
+                <tbody>
+                  ${sessions.rows.map((s) => `
+                    <tr class="clickable" data-session="${esc(s.sessionId || s.key)}">
+                      <td class="mono">${esc((s.sessionId || s.key || '').slice(0, 8))}</td>
+                      <td class="path" title="${esc(s.project)}">${esc(shortPath(s.project, 32))}</td>
+                      <td class="num ${s.cost >= 5 ? 'cost-hi' : ''}">${money(s.cost)}</td>
+                      <td class="num">${s.messages}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>Top projects</h3><button class="linkish" data-goto="projects">See all →</button></div>
+            <div class="scroll-table">
+              <table>
+                <thead><tr><th>Project</th><th class="num">Cost</th><th class="num">Share</th><th></th></tr></thead>
+                <tbody>
+                  ${projects.rows.slice(0, 12).map((p) => {
+                    const share = p.share || 0;
+                    return `<tr class="clickable" data-project="${esc(p.name || p.key)}">
+                      <td class="path" title="${esc(p.project || p.key)}">${esc(shortPath(p.project || p.key, 36))}</td>
+                      <td class="num">${money(p.cost)}</td>
+                      <td class="num">${share.toFixed(1)}%</td>
+                      <td><div class="bar-wrap"><div class="bar" style="width:${Math.min(100, share)}%"></div></div></td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      root.querySelectorAll('[data-goto]').forEach((el) => {
+        el.addEventListener('click', () => setView(el.dataset.goto));
+      });
+      root.querySelectorAll('tr[data-session]').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.selectedSession = el.dataset.session;
+          setView('conversation');
+        });
+      });
+      root.querySelectorAll('tr[data-project]').forEach((el) => {
+        el.addEventListener('click', () => {
+          $('#f-project').value = el.dataset.project;
+          state.filters.project = el.dataset.project;
+          setView('sessions');
+        });
+      });
+    }
+
+    async function renderSessions(root) {
+      const data = await api('/api/sessions', { limit: 500, sort: 'time' });
+      root.innerHTML = `
+        <div class="panel">
+          <div class="panel-h">
+            <h3>${data.rows.length} sessions</h3>
+            <span class="meta">click a row to open conversation history</span>
+          </div>
+          <div class="scroll-table" style="max-height:calc(100vh - 220px)">
+            <table>
+              <thead>
+                <tr>
+                  <th>Session</th>
+                  <th>Project</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Turns</th>
+                  <th class="num">Tokens</th>
+                  <th>Models</th>
+                  <th>Started</th>
+                  <th>Last</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.rows.map((s) => `
+                  <tr class="clickable" data-session="${esc(s.sessionId || s.key)}">
+                    <td class="mono">${esc((s.sessionId || s.key || '').slice(0, 8))}</td>
+                    <td class="path" title="${esc(s.project)}">${esc(shortPath(s.project, 40))}</td>
+                    <td class="num ${s.cost >= 5 ? 'cost-hi' : ''}">${money(s.cost)}</td>
+                    <td class="num">${s.messages.toLocaleString()}</td>
+                    <td class="num">${tokens(s.tokens)}</td>
+                    <td>${(s.models || []).slice(0, 3).map((m) => `<span class="pill model">${esc(shortModel(m.model))}</span>`).join(' ')}</td>
+                    <td class="muted">${when(s.first)}</td>
+                    <td class="muted">${when(s.last)}</td>
+                  </tr>`).join('') || '<tr><td colspan="8" class="empty">No sessions matched filters</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      root.querySelectorAll('tr[data-session]').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.selectedSession = el.dataset.session;
+          setView('conversation');
+        });
+      });
+    }
+
+    async function renderConversation(root) {
+      // Session picker + conversation pane
+      const sessions = await api('/api/sessions', { limit: 300, sort: 'time' });
+      if (!state.selectedSession && sessions.rows[0]) {
+        state.selectedSession = sessions.rows[0].sessionId || sessions.rows[0].key;
+      }
+
+      root.innerHTML = `
+        <div class="split">
+          <div class="panel">
+            <div class="panel-h"><h3>Sessions</h3><span class="meta">${sessions.rows.length}</span></div>
+            <div class="session-list" id="sess-list">
+              ${sessions.rows.map((s) => {
+                const id = s.sessionId || s.key;
+                const active = id === state.selectedSession ? 'active' : '';
+                return `<button class="session-item ${active}" data-session="${esc(id)}">
+                  <div class="row1"><span class="id">${esc(id.slice(0, 8))}</span><span class="cost">${money(s.cost)}</span></div>
+                  <div class="proj" title="${esc(s.project)}">${esc(shortPath(s.project, 42))}</div>
+                  <div class="meta"><span>${s.messages} turns</span><span>${when(s.first)}</span></div>
+                </button>`;
+              }).join('') || '<div class="empty">No sessions</div>'}
+            </div>
+          </div>
+          <div class="panel conv-wrap" id="conv-panel">
+            <div class="loading">Select a session…</div>
+          </div>
+        </div>
+      `;
+
+      const loadConv = async (sessionId) => {
+        state.selectedSession = sessionId;
+        $$('.session-item', root).forEach((b) =>
+          b.classList.toggle('active', b.dataset.session === sessionId)
+        );
+        const panel = $('#conv-panel', root);
+        panel.innerHTML = '<div class="loading">Loading conversation…</div>';
+        try {
+          const hideTools = state.hideToolResults !== false; // default hide pure tool results
+          const data = await api('/api/conversation', { session: sessionId });
+          const events = data.events || [];
+          const visible = events.filter((e) => {
+            if (!state.showToolResults && e.isToolResult) return false;
+            return true;
+          });
+
+          panel.innerHTML = `
+            <div class="conv-head">
+              <div>
+                <div class="mono" style="font-size:13px;color:#c8b8ff">${esc(data.sessionId)}</div>
+                <div class="path" style="margin-top:4px">${esc((data.projects || []).join(' · ') || '—')}</div>
+                <div class="muted" style="font-size:12px;margin-top:6px">
+                  ${when(data.first)} → ${when(data.last)} ·
+                  ${data.assistantTurns} assistant turns ·
+                  ${money(data.cost)} ·
+                  ${tokens(data.tokens)} tokens
+                </div>
+              </div>
+              <div class="toggle-row">
+                ${(data.models || []).map((m) => `<span class="pill model">${esc(shortModel(m))}</span>`).join('')}
+                <label class="muted" style="font-size:12px;display:flex;gap:6px;align-items:center;cursor:pointer">
+                  <input type="checkbox" id="show-tools" ${state.showToolResults ? 'checked' : ''} />
+                  tool results
+                </label>
+              </div>
+            </div>
+            <div class="conv-scroll" id="conv-scroll">
+              ${visible.length ? visible.map((e) => bubbleHtml(e)).join('') : '<div class="empty">No messages in this session</div>'}
+            </div>
+          `;
+
+          const cb = $('#show-tools', panel);
+          if (cb) {
+            cb.addEventListener('change', () => {
+              state.showToolResults = cb.checked;
+              loadConv(sessionId);
+            });
+          }
+          panel.querySelectorAll('[data-expand]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const body = btn.closest('.bubble').querySelector('.body');
+              body.classList.toggle('collapsed');
+              btn.textContent = body.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+            });
+          });
+          const scroll = $('#conv-scroll', panel);
+          if (scroll) scroll.scrollTop = 0;
+        } catch (err) {
+          panel.innerHTML = `<div class="error" style="margin:16px">${esc(err.message)}</div>`;
+        }
+      };
+
+      root.querySelectorAll('.session-item').forEach((btn) => {
+        btn.addEventListener('click', () => loadConv(btn.dataset.session));
+      });
+
+      if (state.selectedSession) await loadConv(state.selectedSession);
+    }
+
+    function bubbleHtml(e) {
+      const role = e.role === 'user' ? 'user' : 'assistant';
+      const toolish = e.isToolResult || (e.tools && e.tools.length && !e.text);
+      const text = e.text || (e.isToolResult ? '(tool result)' : '');
+      const long = text.length > 900;
+      const costBit = e.role === 'assistant' && e.cost
+        ? `<span class="${e.cost >= 0.5 ? 'cost-hi' : ''}">${money(e.cost)}</span>`
+        : '';
+      const usageBit = e.usage
+        ? `<span>${tokens(e.usage.input)} in · ${tokens(e.usage.output)} out · ${tokens(e.usage.cacheRead)} cache-r</span>`
+        : '';
+      const tools = (e.tools || []).map((t) =>
+        `<span class="tool" title="${esc(t.inputPreview || '')}">${esc(t.kind === 'tool_use' ? t.name : t.kind)}</span>`
+      ).join('');
+
+      return `
+        <div class="bubble ${role} ${toolish ? 'toolish' : ''}">
+          <div class="meta">
+            <span class="role">${esc(role)}</span>
+            <span>${when(e.at)}</span>
+            ${e.turn ? `<span>turn ${e.turn}</span>` : ''}
+            ${e.model ? `<span class="pill model">${esc(shortModel(e.model))}</span>` : ''}
+            ${costBit}
+            ${usageBit}
+            ${e.isSidechain ? '<span class="pill">sidechain</span>' : ''}
+            ${long ? '<button class="linkish" data-expand>Expand</button>' : ''}
+          </div>
+          ${text ? `<div class="body ${long ? 'collapsed' : ''}">${esc(text)}</div>` : ''}
+          ${tools ? `<div class="tools">${tools}</div>` : ''}
+        </div>
+      `;
+    }
+
+    async function renderProjects(root) {
+      const data = await api('/api/projects');
+      const max = Math.max(1, ...data.rows.map((r) => r.cost));
+      root.innerHTML = `
+        <div class="panel">
+          <div class="panel-h"><h3>${data.rows.length} projects</h3><span class="meta">click to filter sessions</span></div>
+          <div class="scroll-table" style="max-height:calc(100vh - 220px)">
+            <table>
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Share</th>
+                  <th class="num">Turns</th>
+                  <th class="num">Tokens</th>
+                  <th>Last used</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.rows.map((p) => {
+                  const share = p.share || 0;
+                  return `<tr class="clickable" data-project="${esc(p.name || p.key)}">
+                    <td class="path" title="${esc(p.project || p.key)}">${esc(p.project || p.key)}</td>
+                    <td class="num">${money(p.cost)}</td>
+                    <td class="num">${share.toFixed(1)}%</td>
+                    <td class="num">${p.messages.toLocaleString()}</td>
+                    <td class="num">${tokens(p.tokens)}</td>
+                    <td class="muted">${when(p.last)}</td>
+                    <td><div class="bar-wrap" style="min-width:80px"><div class="bar" style="width:${(100 * p.cost / max).toFixed(1)}%"></div></div></td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      root.querySelectorAll('tr[data-project]').forEach((el) => {
+        el.addEventListener('click', () => {
+          $('#f-project').value = el.dataset.project;
+          state.filters.project = el.dataset.project;
+          setView('sessions');
+        });
+      });
+    }
+
+    async function renderMessages(root) {
+      const data = await api('/api/messages', { limit: 100, sort: 'cost' });
+      root.innerHTML = `
+        <div class="panel">
+          <div class="panel-h"><h3>Top ${data.rows.length} expensive turns</h3><span class="meta">${data.total.toLocaleString()} total matching</span></div>
+          <div class="scroll-table" style="max-height:calc(100vh - 220px)">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Session</th>
+                  <th>Model</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Out</th>
+                  <th class="num">Cache R</th>
+                  <th>Prompt</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.rows.map((m) => `
+                  <tr class="clickable" data-session="${esc(m.sessionId)}">
+                    <td class="muted">${when(m.at)}</td>
+                    <td class="mono">${esc((m.sessionId || '').slice(0, 8))}</td>
+                    <td><span class="pill model">${esc(shortModel(m.model))}</span></td>
+                    <td class="num ${m.cost >= 0.5 ? 'cost-hi' : ''}">${money(m.cost)}</td>
+                    <td class="num">${tokens(m.usage?.output || 0)}</td>
+                    <td class="num">${tokens(m.usage?.cacheRead || 0)}</td>
+                    <td class="muted">${esc((m.prompt || m.preview || '').slice(0, 80))}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      root.querySelectorAll('tr[data-session]').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.selectedSession = el.dataset.session;
+          setView('conversation');
+        });
+      });
+    }
+
+    // wire nav + filters
+    $$('.nav-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+    const applyFilters = () => {
+      state.filters.project = $('#f-project').value.trim();
+      state.filters.since = $('#f-since').value.trim();
+      state.filters.model = $('#f-model').value.trim();
+      render();
+    };
+    $('#btn-apply').addEventListener('click', applyFilters);
+    $('#btn-refresh').addEventListener('click', render);
+    ['f-project', 'f-since', 'f-model'].forEach((id) => {
+      $(`#${id}`).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') applyFilters();
+      });
+    });
+
+    // deep link ?session=
+    const params = new URLSearchParams(location.search);
+    if (params.get('session')) {
+      state.selectedSession = params.get('session');
+      state.view = 'conversation';
+    }
+    if (params.get('project')) {
+      state.filters.project = params.get('project');
+      $('#f-project').value = state.filters.project;
+    }
+    if (params.get('since')) {
+      state.filters.since = params.get('since');
+      $('#f-since').value = state.filters.since;
+    }
+    setView(state.view);
+  </script>
+</body>
+</html>

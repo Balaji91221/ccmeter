@@ -1,0 +1,46 @@
+skill: revamp
+budgets:
+  context_tokens: 80000
+  input_new_tokens: 12000
+  output_tokens: 4000
+  cache_prefix_stable: true
+always_keep:
+  - errors
+  - user_messages
+  - current_stage_goal
+  - pass_packet
+stages:
+  - id: explore
+    intent: Map current structure, entrypoints, hot modules
+    input_policy:
+      code: signatures_only
+      json:
+        crush_if_over: 500
+    pass_to_next:
+      type: map
+      fields: [tree, hot_files, risks, entrypoints]
+      max_tokens: 1500
+  - id: design
+    intent: Target architecture and boundaries
+    input_policy:
+      prior: use_pass_only
+      code:
+        full_for: hot_files
+    output_policy:
+      effort: high
+    pass_to_next:
+      type: plan
+      fields: [milestones, apis, risks, open_questions, target_tree]
+      max_tokens: 2500
+  - id: verify
+    intent: Acceptance check of plan quality
+    output_policy:
+      effort: medium
+      no_restate_context: true
+    pass_to_next:
+      type: changelog
+      fields: [status, residual_risks]
+      max_tokens: 600
+fail_closed:
+  if_over_budget: compress_then_drop_lowest_score
+  if_need_detail: require_ccr_retrieve

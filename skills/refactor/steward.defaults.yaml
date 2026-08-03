@@ -1,0 +1,42 @@
+skill: refactor
+budgets:
+  context_tokens: 70000
+  input_new_tokens: 12000
+  output_tokens: 3500
+  cache_prefix_stable: true
+always_keep:
+  - errors
+  - user_messages
+  - current_stage_goal
+  - pass_packet
+stages:
+  - id: map
+    intent: Inventory structure and invariants
+    input_policy:
+      code: signatures_only
+    pass_to_next:
+      type: map
+      fields: [tree, invariants, hot_files]
+      max_tokens: 1500
+  - id: extract
+    intent: Incremental structural changes
+    input_policy:
+      prior: use_pass_only
+      code:
+        full_for: hot_files
+    output_policy:
+      effort: high
+      no_restate_context: true
+    pass_to_next:
+      type: diff_summary
+      fields: [files_changed, invariants_checked]
+      max_tokens: 1000
+  - id: verify
+    intent: Prove behavior preserved
+    pass_to_next:
+      type: changelog
+      fields: [status, tests_run, residual_risks]
+      max_tokens: 600
+fail_closed:
+  if_over_budget: compress_then_drop_lowest_score
+  if_need_detail: require_ccr_retrieve

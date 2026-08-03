@@ -1,0 +1,42 @@
+# Engineering task: Debug
+
+## Goal
+{{goal}}
+
+## Context
+- Repo / area: {{repo}}
+- Stack: {{stack}}
+- Related: {{related}}
+
+## Scope (in)
+{{scope_in}}
+
+## Scope (out)
+{{scope_out}}
+
+## Constraints
+{{constraints}}
+
+## Assumptions
+{{assumptions}}
+
+## Acceptance criteria
+{{acceptance}}
+
+## Deliverables
+{{deliverables}}
+
+## Risks
+{{risks}}
+
+## Definition of done
+{{definition_of_done}}
+
+## Working procedure
+1. Reproduce or document blocker
+2. Isolate root cause with evidence
+3. Minimal fix
+4. Verify failing path + nearby regression
+
+## Original user request
+{{raw_user_prompt}}

@@ -1,0 +1,39 @@
+{
+  "name": "ccmeter",
+  "version": "0.1.0",
+  "description": "Per-message, per-session and per-project cost analysis for Claude Code, straight from the raw JSONL transcripts.",
+  "type": "module",
+  "bin": {
+    "ccmeter": "./bin/ccmeter.mjs",
+    "refine": "./bin/refine.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./refiner": "./src/refiner/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/run.mjs",
+    "dashboard": "node bin/ccmeter.mjs dashboard",
+    "start": "node bin/ccmeter.mjs dashboard",
+    "refine": "node bin/refine.mjs",
+    "test:e2e": "node test/e2e-refine.mjs"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "usage",
+    "cost",
+    "tokens",
+    "ccusage"
+  ],
+  "license": "MIT"
+}
