@@ -224,3 +224,7 @@ The suite generates synthetic transcripts that deliberately include a replayed d
 ## License
 
 `package.json` declares the MIT license.
+
+---
+
+Explore more of my work: [latest open-source tools](https://github.com/Balaji91221#latest-open-source-tools) · [recent projects](https://github.com/Balaji91221#recent-work).
