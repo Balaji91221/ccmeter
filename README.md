@@ -10,15 +10,15 @@ Zero runtime dependencies. Node 18+.
 
 ## Install
 
-```bash
-# run it without installing
-npx ccmeter projects
+Download the repository using **Code → Download ZIP**, extract it, and open its directory. With Node.js 18 or newer:
 
-# or clone and link
-git clone <your-repo> ccmeter && cd ccmeter
+```bash
 npm link
 ccmeter doctor
+ccmeter messages --sort cost -n 10
 ```
+
+This source installation uses the CLI declared in `package.json`. Package-registry availability is not assumed here.
 
 `ccmeter doctor` is the first thing to run — it prints which transcript directories were found, how many turns were parsed, and the pricing table in effect.
 
@@ -60,7 +60,7 @@ npm run refine -- -p "fix login timeout" --skill debug -o ./out
 # writes out/brief.json out/token-spec.json out/agent.md
 ```
 
-Skills live under `skills/` (`debug`, `feature`, `refactor`, `revamp`, `test`). Full design plan: `docs/full-plan-prompt-refiner-headroom.html`.
+Skills live under `skills/` (`debug`, `feature`, `refactor`, `revamp`, `test`).
 
 Filters work on every command: `-p/--project`, `-s/--session`, `-m/--model`, `--since`, `--until`, `--no-sidechains`, `--dir`.
 
@@ -118,6 +118,19 @@ Any command also takes `--json` / `--csv` directly if you'd rather not use `expo
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart LR
+  Files[Local JSONL transcripts] --> Parser[Parse and deduplicate records]
+  Parser --> Pricing[Apply configured model rates]
+  Pricing --> Aggregation[Project, session, message, and day views]
+  Aggregation --> CLI[CLI and exports]
+  Aggregation --> Dashboard[Local dashboard]
+```
+
+`src/index.mjs` exposes parsing, aggregation, pricing, budget, export, conversation, and dashboard functions. `bin/ccmeter.mjs` provides the command interface; the prompt refiner is a separate module and executable.
+
 ## How it reads the data
 
 Transcripts live at `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl` (also checked: `$CLAUDE_CONFIG_DIR`, `~/.config/claude`). One JSON object per line. Only `type: "assistant"` lines carry a `usage` block:
@@ -145,12 +158,7 @@ Files are streamed line by line, so a large history never gets loaded into memor
 
 ## Pricing
 
-Rates are in `src/pricing.mjs`, in USD per million tokens, taken from Anthropic's pricing page (verified 2026-08-02):
-<https://platform.claude.com/docs/en/about-claude/pricing>
-
-Cache multipliers are baked in per the docs: 5-minute write 1.25x base input, 1-hour write 2x, cache read 0.1x.
-
-Scheduled price changes are supported — Sonnet 5's introductory $2/$10 rate applies to turns before 2026-09-01 and $3/$15 after, priced by each message's own timestamp rather than by today's date.
+The bundled rate table lives in `src/pricing.mjs`; message timestamps select any time-dependent entries. Treat these as configured estimates and review them against [Anthropic's pricing documentation](https://platform.claude.com/docs/en/about-claude/pricing) before interpreting totals.
 
 Rather than editing the table, drop overrides in `~/.config/ccmeter/pricing.json`:
 
@@ -170,10 +178,9 @@ User entries are checked before the built-ins, so this also works to correct a s
 
 Costs are estimates reconstructed from the transcripts, not billing records. Reconcile against the Console before anything financial depends on them.
 
-- **Fast mode** (`speed: "fast"` on Opus 5 / 4.8, billed $10/$50) isn't recorded in the transcripts, so those turns are under-counted.
-- **US-only inference** (`inference_geo: "us"`, a 1.1x multiplier) likewise isn't recorded.
-- **Server-side tool charges** — web search is $10 per 1,000 searches on top of tokens — are not in the per-message usage block.
-- **Subscription users** (Pro/Max) aren't billed per token at all. The numbers still tell you where your usage is concentrated, but they're the API-equivalent cost, not a bill.
+- Usage fields cannot account for every billing modifier or server-side tool charge.
+- Rates can become outdated; unknown models need a configured rate.
+- Subscription users should interpret totals as an API-equivalent estimate, not a subscription invoice.
 
 ---
 
@@ -213,3 +220,7 @@ npm test
 ```
 
 The suite generates synthetic transcripts that deliberately include a replayed duplicate turn, a truncated final line, a sidechain turn and an unknown model, then asserts on pricing maths, de-duplication, filters, and that project and session totals both reconcile to the grand total.
+
+## License
+
+`package.json` declares the MIT license.
